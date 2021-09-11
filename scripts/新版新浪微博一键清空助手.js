@@ -37,10 +37,12 @@
 
   // 当前删除页码
   let deletePage
-  // 停止清空
-  let stop
   // 已删除数
   let deletedCount
+  // 停止清空
+  let stop
+  // 折叠菜单
+  let fold
 
   const utils = {
     // 获取随机字符串
@@ -185,8 +187,9 @@
   // 重置
   const reset = () => {
     deletePage = 0
-    stop = false
     deletedCount = 0
+    stop = false
+    fold = false
   }
 
   // 结束
@@ -720,8 +723,39 @@
     // 生成菜单
     c_menu.css({
       position: 'fixed',
-      top: 70,
+      top: 80,
       left: 10,
+    })
+
+    const hideBtn = jq('<div>')
+
+    hideBtn
+      .css({
+        width: 40,
+        height: 20,
+        background: '#fff',
+        border: '1px solid #f00',
+        cursor: 'pointer',
+        lineHeight: '20px',
+        textAlign: 'center',
+        fontSize: 12,
+      })
+      .text('收起')
+      .click(() => {
+        fold = !fold
+
+        if (fold) {
+          hideBtn.text('展开')
+          container.hide()
+        } else {
+          hideBtn.text('收起')
+          container.show()
+        }
+      })
+
+    const container = jq('<div>')
+
+    container.css({
       width: 140,
       border: '3px solid #f00',
       background: '#fff',
@@ -743,9 +777,11 @@
         if (item.onClick) item.onClick()
       })
 
-      c_menu.append(div)
+      container.append(div)
     })
 
+    c_menu.append(hideBtn)
+    c_menu.append(container)
     c_app.append(c_menu)
   }
 
