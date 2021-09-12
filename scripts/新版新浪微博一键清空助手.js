@@ -2,7 +2,7 @@
 /* eslint-disable no-extra-semi */
 /* eslint-disable no-console */
 // ==UserScript==
-// @name         新版新浪微博一键清空助手
+// @name         新浪微博(新版)一键清空助手
 // @namespace    https://greasyfork.org/zh-CN/users/812943
 // @version      0.0.1
 // @description  一键批量清空微博博文、微博粉丝、微博关注列表、微博回复，同时引导用户注销微博
@@ -19,19 +19,56 @@
   'use strict'
 
   const jq = window.jQuery
-  const c_app = jq('#app')
-  const c_menu = jq('<div />')
-  const c_notice = jq('<div />')
-  const c_btn = jq('<div />')
 
   const HELPER_NAME = '微博一键清空助手'
   const TOKEN = jq.cookie('XSRF-TOKEN')
   const WB_CONFIG = window.$CONFIG
   const UID = WB_CONFIG.uid
-  const STATUSES_COUNT = WB_CONFIG.user.statuses_count
-  const FRIENDS_COUNT = WB_CONFIG.user.friends_count
-  const FOLLOWERS_COUNT = WB_CONFIG.user.followers_count
+  const USER = WB_CONFIG.user
+
+  const showNewWeoboTip = () => {
+    if (!jq('#plc_frame .WB_frame')[0]) {
+      return setTimeout(showNewWeoboTip, 1000)
+    }
+
+    const tip = jq('<div />')
+
+    tip
+      .css({
+        position: 'fixed',
+        top: 70,
+        left: 10,
+        width: 200,
+        height: 30,
+        color: '#f00',
+        background: '#fff',
+        border: '1px solid #f00',
+        lineHeight: '30px',
+        textAlign: 'center',
+        cursor: 'pointer',
+      })
+      .text('当前是旧版，是否切换到新版？')
+      .click(() => {
+        const newWeiboEntry = jq('a[action-type="changeversion"]')
+
+        newWeiboEntry[0].click()
+      })
+
+    jq('#plc_frame').append(tip)
+  }
+
+  if (!USER) {
+    return showNewWeoboTip()
+  }
+
+  const STATUSES_COUNT = USER.statuses_count
+  const FRIENDS_COUNT = USER.friends_count
+  const FOLLOWERS_COUNT = USER.followers_count
   const URL_PREFIX = 'https://weibo.com/u'
+  const c_app = jq('#app')
+  const c_menu = jq('<div />')
+  const c_notice = jq('<div />')
+  const c_btn = jq('<div />')
 
   if (!UID) return
 
