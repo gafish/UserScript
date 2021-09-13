@@ -4,7 +4,7 @@
 // ==UserScript==
 // @name         新浪微博(新版)一键清空助手
 // @namespace    https://greasyfork.org/zh-CN/users/812943
-// @version      0.0.1
+// @version      0.0.2
 // @description  一键批量清空微博博文、微博粉丝、微博关注列表、微博回复，同时引导用户注销微博
 // @author       gafish
 // @match        https://weibo.com/*
@@ -27,8 +27,10 @@
   const USER = WB_CONFIG.user
 
   const showNewWeoboTip = () => {
-    if (!jq('#plc_frame .WB_frame')[0]) {
-      return setTimeout(showNewWeoboTip, 1000)
+    const newWeiboEntry = jq('a[action-type="changeversion"]')
+
+    if (!newWeiboEntry[0]) {
+      return setTimeout(showNewWeoboTip, 500)
     }
 
     const tip = jq('<div />')
@@ -49,9 +51,9 @@
       })
       .text('当前是旧版，是否切换到新版？')
       .click(() => {
-        const newWeiboEntry = jq('a[action-type="changeversion"]')
-
-        newWeiboEntry[0].click()
+        if (newWeiboEntry[0]) {
+          newWeiboEntry[0].click()
+        }
       })
 
     jq('#plc_frame').append(tip)
