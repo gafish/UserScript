@@ -4,7 +4,7 @@
 // ==UserScript==
 // @name         新浪微博(新版)一键清空助手
 // @namespace    https://greasyfork.org/zh-CN/users/812943
-// @version      0.0.2
+// @version      0.0.3
 // @description  一键批量清空微博博文、微博粉丝、微博关注列表、微博回复，同时引导用户注销微博
 // @author       gafish
 // @match        https://weibo.com/*
@@ -318,6 +318,7 @@
             return () =>
               new Promise(resolve => {
                 setTimeout(() => {
+                  const oriMid = item.ori_mid
                   const id = item.id
                   const no = index + 1
 
@@ -325,8 +326,15 @@
 
                   utils.log('待删除微博', no, id)
                   utils.showDeleteNotice(STATUSES_COUNT, no)
-                  deleteWeibo(id).done(resolve)
-                }, Math.random() * 500 + 500)
+
+                  if (oriMid) {
+                    // 删除快转
+                    deleteWeibo(oriMid).done(resolve)
+                  } else {
+                    // 正常删除
+                    deleteWeibo(id).done(resolve)
+                  }
+                }, Math.random() * 500 + 100)
               })
           })
 
