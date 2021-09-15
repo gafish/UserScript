@@ -4,7 +4,7 @@
 // ==UserScript==
 // @name         新浪微博(新版)一键清空助手
 // @namespace    https://greasyfork.org/zh-CN/users/812943
-// @version      0.0.3
+// @version      0.0.4
 // @description  一键批量清空微博博文、微博粉丝、微博关注列表、微博回复，同时引导用户注销微博
 // @author       gafish
 // @match        https://weibo.com/*
@@ -294,11 +294,11 @@
   }
 
   // 获取微博列表
-  const getWeiboList = () => {
+  const getWeiboList = (page = 1) => {
     if (stop) return
 
     jq.ajax({
-      url: '/ajax/statuses/mymblog?uid=' + UID + '&page=1&feature=0',
+      url: '/ajax/statuses/mymblog?uid=' + UID + '&page=' + page + '&feature=0',
       type: 'GET',
       dataType: 'json',
     })
@@ -306,7 +306,15 @@
         utils.log('获取微博分页', res)
         if (res && res.data && res.data.list) {
           if (res.data.list.length === 0) {
-            return end()
+            if (page === 2) {
+              // 如果第2页也没有，则结束
+              end()
+            } else {
+              // 第1页没有微博，有可能是微博bug，去第2页看看
+              getWeiboList(2)
+            }
+
+            return
           }
 
           deletePage++
@@ -317,31 +325,29 @@
           const promisesTask = res.data.list.map((item, index) => {
             return () =>
               new Promise(resolve => {
-                setTimeout(() => {
-                  const oriMid = item.ori_mid
-                  const id = item.id
-                  const no = index + 1
+                const oriMid = item.ori_mid
+                const id = item.id
+                const no = index + 1
 
-                  if (stop) return
+                if (stop) return
 
-                  utils.log('待删除微博', no, id)
-                  utils.showDeleteNotice(STATUSES_COUNT, no)
+                utils.log('待删除微博', no, id)
+                utils.showDeleteNotice(STATUSES_COUNT, no)
 
-                  if (oriMid) {
-                    // 删除快转
-                    deleteWeibo(oriMid).done(resolve)
-                  } else {
-                    // 正常删除
-                    deleteWeibo(id).done(resolve)
-                  }
-                }, Math.random() * 500 + 100)
+                if (oriMid) {
+                  // 删除快转
+                  deleteWeibo(oriMid).done(resolve)
+                } else {
+                  // 正常删除
+                  deleteWeibo(id).done(resolve)
+                }
               })
           })
 
           utils.serialPromise(promisesTask, () => {
             setTimeout(() => {
               getWeiboList()
-            }, 1000)
+            }, 2000)
           })
         }
       })
