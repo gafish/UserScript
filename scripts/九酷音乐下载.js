@@ -2,8 +2,8 @@
 // ==UserScript==
 // @name         9ku.com 九酷音乐下载
 // @namespace    https://greasyfork.org/zh-CN/users/812943
-// @version      0.0.2
-// @description  九酷音乐下载器，一键下载
+// @version      0.0.4
+// @description  九酷音乐下载工具，一键另存下载MP3文件，一键复制歌曲文件名
 // @author       gafish
 // @match        https://www.9ku.com/play/*.htm
 // @icon         https://www.google.com/s2/favicons?domain=9ku.com
@@ -18,8 +18,9 @@
   const box = jQuery('.ppBox')
   const feifa = jQuery('#feifa')
 
+  const downloadedKey = 'chrome_plugin_downloaded'
+
   let musicInfo
-  let fileName
 
   const init = () => {
     const { singer, musicname, song_id, meida } = window
@@ -39,7 +40,20 @@
 
     addDownloadButton()
     addMp3FileName()
-    deleteSprr()
+
+    hidePalylistAd()
+
+    const downloaded = getDownloaded()
+
+    if (downloaded.includes(musicInfo.songID)) {
+      addDownloadedTag()
+    }
+  }
+  const getDownloaded = () => {
+    const downloaded = window.localStorage[downloadedKey] || '[]'
+    const downloadedArr = JSON.parse(downloaded)
+
+    return downloadedArr
   }
   const addDownloadButton = () => {
     if (!box || !musicInfo) return
@@ -54,17 +68,28 @@
       </a>
     `)
 
-    downloadBtn.css({
-      display: 'block',
-      backgroundColor: '#f00',
-      color: '#fff',
-      padding: '5px 10px',
-      borderRadius: 5,
-      margin: 10,
-      textAlign: 'center',
-      height: 30,
-      lineHeight: '30px',
-    })
+    downloadBtn
+      .css({
+        display: 'block',
+        backgroundColor: '#f00',
+        color: '#fff',
+        padding: '5px 10px',
+        borderRadius: 5,
+        margin: 10,
+        textAlign: 'center',
+        height: 30,
+        lineHeight: '30px',
+      })
+      .contextmenu(() => {
+        const downloaded = getDownloaded()
+
+        if (!downloaded.includes(musicInfo.songID)) {
+          downloaded.push(musicInfo.songID)
+          window.localStorage[downloadedKey] = JSON.stringify(downloaded)
+        }
+
+        addDownloadedTag()
+      })
 
     box.append(downloadBtn)
   }
@@ -92,31 +117,54 @@
         cursor: 'pointer',
       })
       .click(() => {
-        copyToClipboard(fileName)
+        copyToClipboard(musicInfo.downloadFileName)
         fileNameContaner.find('b').text('已复制')
       })
 
     box.append(fileNameContaner)
   }
-  const deleteSprr = () => {
+  const addDownloadedTag = () => {
+    if (box.find('#downloaded').length) return
+
+    const downloadedTag = jQuery(`
+      <div id="downloaded">
+      <b>已下载</b>
+      </div>
+    `)
+
+    downloadedTag.css({
+      position: 'absolute',
+      top: -10,
+      left: -10,
+      zIndex: 99,
+      backgroundColor: 'yellow',
+      color: '#f00',
+      borderRadius: '50%',
+      border: '1px solid #f00',
+      textAlign: 'center',
+      width: 50,
+      height: 50,
+      lineHeight: '50px',
+      transform: 'rotate(-45deg)',
+    })
+    box.prepend(downloadedTag)
+  }
+  const hidePalylistAd = () => {
     let i = 0
-    const findSprr = () => {
+    const findAdLi = () => {
       if (i > 1000) return
 
       const sprr = jQuery('#songlist li[id]')
 
-      if (sprr.length === 0) {
-        setTimeout(() => {
-          findSprr()
-          i++
-        }, 300)
-        return
-      }
+      setTimeout(() => {
+        findAdLi()
+        i++
+      }, 1000)
 
-      sprr.remove()
+      sprr.hide()
     }
 
-    findSprr()
+    findAdLi()
   }
   const reShowPlayer = () => {
     feifa.html(`
@@ -187,7 +235,6 @@
                     </li>
                   </ul>
                 </div>
-    
                 <div class="fr">
                   <ul class="ku-volume">
                     <li>
