@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         9ku.com 九酷音乐下载
 // @namespace    https://greasyfork.org/zh-CN/users/812943
-// @version      0.0.1
+// @version      0.0.2
 // @description  九酷音乐下载器，一键下载
 // @author       gafish
 // @match        https://www.9ku.com/play/*.htm
@@ -15,23 +15,44 @@
 ;(function (jQuery, copyToClipboard) {
   'use strict'
 
-  const init = () => {
-    const box = jQuery('.ppBox')
+  const box = jQuery('.ppBox')
+  const feifa = jQuery('#feifa')
 
+  let musicInfo
+  let fileName
+
+  const init = () => {
     const { singer, musicname, song_id, meida } = window
     const { mp3 } = meida
+
+    musicInfo = {
+      singer,
+      musicName: musicname,
+      songID: song_id,
+      mp3URL: mp3,
+      downloadFileName: `${singer} - ${musicname}.mp3`,
+    }
 
     if (!box[0]) return
 
     box.css({ height: 340 })
 
-    // 空格替换为下划线
-    const fileName = `${singer} - ${musicname}.mp3`
-    // .replace(/\s/g, '_')
-    const downloadBtn = jQuery(
-      `<a href="${mp3}" download=${fileName} target="_blank">右键另存MP3文件</a>`,
-    )
-    const fileNameText = jQuery(`<div>点击复制文件名<b></b><br />${fileName}</div>`)
+    addDownloadButton()
+    addMp3FileName()
+    deleteSprr()
+  }
+  const addDownloadButton = () => {
+    if (!box || !musicInfo) return
+
+    const downloadBtn = jQuery(`
+      <a
+        href="${musicInfo.mp3URL}"
+        download=${musicInfo.downloadFileName.replace(/\s/g, '_')}
+        target="_blank"
+      >
+        右键另存MP3文件
+      </a>
+    `)
 
     downloadBtn.css({
       display: 'block',
@@ -44,7 +65,20 @@
       height: 30,
       lineHeight: '30px',
     })
-    fileNameText
+
+    box.append(downloadBtn)
+  }
+  const addMp3FileName = () => {
+    if (!box || !musicInfo) return
+
+    const fileNameContaner = jQuery(`
+      <div>
+        点击复制文件名
+        <b></b><br />
+        ${musicInfo.downloadFileName}
+      </div>
+    `)
+    fileNameContaner
       .css({
         display: 'block',
         backgroundColor: '#ccc',
@@ -59,16 +93,146 @@
       })
       .click(() => {
         copyToClipboard(fileName)
-
-        fileNameText.find('b').text('已复制')
-
-        setTimeout(() => {
-          fileNameText.find('b').text('')
-        }, 2000)
+        fileNameContaner.find('b').text('已复制')
       })
 
-    box.append(downloadBtn)
-    box.append(fileNameText)
+    box.append(fileNameContaner)
+  }
+  const deleteSprr = () => {
+    let i = 0
+    const findSprr = () => {
+      if (i > 1000) return
+
+      const sprr = jQuery('#songlist li[id]')
+
+      if (sprr.length === 0) {
+        setTimeout(() => {
+          findSprr()
+          i++
+        }, 300)
+        return
+      }
+
+      sprr.remove()
+    }
+
+    findSprr()
+  }
+  const reShowPlayer = () => {
+    feifa.html(`
+      <div class="playingTit" style="color: yellow;">该歌曲侵犯相关权益人权利，九酷原站不提供试听</div>
+      <div id="lrctext" style="display: none">
+        <textarea id="lrc_content" style="display: block">[00:00.00]</textarea>
+      </div>
+      <div class="oldPlayer">
+        <div id="jp_container_1" class="jp-audio">
+          <div class="jp-type-single">
+            <div class="jp-interface clearfix">
+              <div class="playerMain-01">
+                <div class="playName">
+                </div>
+                <div class="jp-time-holder">
+                  <div class="jp-current-time">00:00</div>
+                  /
+                  <div class="jp-duration">00:00</div>
+                </div>
+              </div>
+              <div class="playerMain-02">
+                <div class="jp-progress">
+                  <div class="jp-seek-bar" style="width: 0%">
+                    <div class="jp-play-bar" style="width: 0%"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="playerMain-03">
+                <div class="fl">
+                  <ul class="jp-controls">
+                    <li>
+                      <a
+                        href="javascript:{};"
+                        onclick="javascript:vy.z=1;downlog(song_id,2,timeupd1);pu.PlayNext(-1);"
+                        class="jp-previous"
+                        tabindex="1"
+                        title="按键盘上的‘↑’或‘←’键切换到上一首"
+                        >上一首</a
+                      >
+                    </li>
+                    <li>
+                      <a
+                        href="javascript:{};"
+                        class="jp-play"
+                        tabindex="1"
+                        title="按键盘上的‘space(空格)’键在播放与暂停之间切换"
+                        >播放</a
+                      >
+                    </li>
+                    <li>
+                      <a
+                        href="javascript:{};"
+                        class="jp-pause"
+                        tabindex="1"
+                        title="按键盘上的‘space(空格)’键在播放与暂停之间切换"
+                        >暂停</a
+                      >
+                    </li>
+                    <li>
+                      <a
+                        href="javascript:{};"
+                        onclick="javascript:vy.z=1;downlog(song_id,2,timeupd1);pu.PlayNext(1);"
+                        class="jp-next"
+                        tabindex="1"
+                        title="按键盘上的‘→’或‘↓’键切换到下一首"
+                        >下一首</a
+                      >
+                    </li>
+                  </ul>
+                </div>
+    
+                <div class="fr">
+                  <ul class="ku-volume">
+                    <li>
+                      <a
+                        href="javascript:{};"
+                        class="jp-mute"
+                        tabindex="1"
+                        title="静音"
+                        >静音</a
+                      >
+                    </li>
+                    <li>
+                      <a
+                        href="javascript:{};"
+                        class="jp-unmute"
+                        style="display: none"
+                        tabindex="1"
+                        title="取消静音"
+                        >取消静音</a
+                      >
+                    </li>
+                    <li class="volume-bar-wrap">
+                      <div class="jp-volume-bar">
+                        <div class="jp-volume-bar-value" style="width: 80%"></div>
+                      </div>
+                    </li>
+                    <li>
+                      <a
+                        href="javascript:{};"
+                        class="jp-volume-max"
+                        tabindex="1"
+                        title="最大音量"
+                        >最大音量</a
+                      >
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `)
+    window.ndPlayer = new window.KuPlayer()
+    window.musiclist()
   }
   const checkMp3 = () => {
     if (!window.meida.mp3) {
@@ -77,6 +241,11 @@
     }
 
     init()
+  }
+
+  // 非法音乐，重新显示播放器
+  if (feifa) {
+    reShowPlayer()
   }
 
   checkMp3()
